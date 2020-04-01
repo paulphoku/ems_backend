@@ -34,6 +34,10 @@ function saltHashPassword(userPassword) {
     var passwordData = sha512(userPassword,salt);
     return passwordData;
 };
+function checkHashPassword(userPassword, salt){
+    var passwordData = sha512(userPassword, salt);
+    return passwordData; 
+}
 //END PASSWORD UTIL
 
 
@@ -51,6 +55,7 @@ app.use(bodyParser.urlencoded({extended:true}));
 //     console.log('Salt: ' +encrypt.salt);
 // });
 
+//Register
 app.post('/register/',(req,res,next)=>{
     var post_data = req.body; //get post params
     
@@ -60,31 +65,60 @@ app.post('/register/',(req,res,next)=>{
     var password = hash_data.passwordHash;
     var salt = hash_data.salt; //get salt
 
-    var name = post_data.name;
+    var fname = post_data.fname;
+    var lname = post_data.lname;
     var email = post_data.email;
 
     db.query('SELECT * FROM user WHERE usr_email=?', [email], function(err, results,fields){
-        if(err)throw error;
-        // {
-        //     console.log('MySQL ERROR', err);
-        // }
+        if(err){
+            console.log('MySQL ERROR', err);
+        }
 
         if(results && results.length){
             res.json('User already exists!!!')
         }else{
             db.query('INSERT INTO `user`(`usr_unique_id`, `usr_salt`, `usr_created_at`, `usr_updated_at`, `usr_fname`, `usr_lname`, `usr_email`, `usr_encrypted_password`) VALUES (?,?,NOW(),NOW(),?,?,?,?)',
-            [uid, salt,name, name, email, password],function(err, result, fields) {
-                if(err)throw error;
-                // if(err){
-                //     console.log('MySQL ERROR', err);
-                //     res.json('Register error: ', error);
-                // }
+            [uid, salt,fname, lname, email, password],function(err, result, fields) {
+                if(err){
+                    console.log('MySQL ERROR', err);
+                    res.json('Register error: ', error);
+                }
                 res.json('Register sucessful');
                 res.json(result);
             });
         }
     });
 })
+
+app.post('/login',(req, res, next) =>{
+
+    var post_data = req.body;
+
+    //Extract email and password from request
+    var user_password = post_data.password;
+    var email = post_data.email;
+
+    db.query('Select * From user Where usr_email=?', [email],function(error, result, fields){
+        db.on('error', function(err){
+            console.log('MySQL ERROR',err);
+            res.json('Login Error');
+        });
+
+        if (result && result[0].usr_salt) {
+            var salt = result[0].usr_salt;//Getsalt from database
+            var encrypted_password = result[0].usr_encrypted_password;
+            //hash password from login
+            var hashed_password = checkHashPassword(user_password, salt).passwordHash;
+            if (encrypted_password == hashed_password) {
+                res.end(JSON.stringify(result[0]));
+            }else{
+                res.end(JSON.stringify('Wrong password'));
+            }
+        }else{
+            res.json('user not exist!!!');
+        }
+    });
+});
 
 //start server
 app.listen(port, () => {
