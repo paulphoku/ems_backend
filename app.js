@@ -75,15 +75,17 @@ app.post('/register/',(req,res,next)=>{
         }
 
         if(results && results.length){
-            res.json('User already exists!!!')
+            res.json('User already exists!!!');
+            console.log('User already exists!!!');
         }else{
             db.query('INSERT INTO `user`(`usr_unique_id`, `usr_salt`, `usr_created_at`, `usr_updated_at`, `usr_fname`, `usr_lname`, `usr_email`, `usr_encrypted_password`) VALUES (?,?,NOW(),NOW(),?,?,?,?)',
             [uid, salt,fname, lname, email, password],function(err, result, fields) {
                 if(err){
                     console.log('MySQL ERROR', err);
-                    res.json('Register error: ', error);
+                    res.json('Register error: ',err);
                 }
                 res.json('Register sucessful');
+                console.log('Register sucessful');
                 res.json(result);
             });
         }
