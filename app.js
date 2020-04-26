@@ -135,6 +135,71 @@ app.get('/test',(req, res, next) =>{
     });
 });
 
+//Get Balance
+app.get('/getBal/:user_id',(req, res, next) =>{
+
+    let user_id = req.params.user_id;
+
+    db.query('SELECT * FROM transactions WHERE user_id='+user_id,function(error, result, fields){
+        db.on('error', function(err){
+            console.log('MySQL ERROR',err);
+            res.json('Login Error');
+        });
+
+        if(result<1){
+            res.end(JSON.stringify(0));
+        }else{
+            db.query('SELECT SUM(t_amt) as bal FROM transactions',function(err, Res){
+                res.end(JSON.stringify(Res[0].bal));
+            });
+        }
+    });
+});
+
+//Get Balance
+app.get('/getTrans/:user_id',(req, res, next) =>{
+
+    let user_id = req.params.user_id;
+
+    db.query('SELECT * FROM transactions WHERE usr_id="'+user_id+'\"',function(error, result, fields){
+        db.on('error', function(err){
+            console.log('MySQL ERROR',err);
+            res.json('Login Error');
+        });
+
+        if(result<1){
+            res.end(JSON.stringify('No Transactions yet'));
+        }else{
+            res.send({data:result});
+        }
+    });
+});
+
+app.post('/transact/',(req,res,next)=>{
+    var post_data = req.body; //get post params
+
+    usr_id  = post_data.usr_id;
+    t_desc  = post_data.t_desc;
+    t_amt   = post_data.t_amt;
+    t_bal   = post_data.t_bal;
+    t_type  = post_data.t_type;
+
+    db.query('INSERT INTO `transactions`(`usr_id`, `t_type`, `t_desc`, `t_date`, `t_amt`, `t_bal`) VALUES (?,?,?,NOW(),?,?)',
+    [usr_id, t_type, t_desc, t_amt, t_bal],function(err, result, fields) {
+        if(err){
+            console.log('MySQL ERROR', err);
+            res.status(200);
+        }else{
+            res.json('Transaction sucessful');
+            console.log('Transaction sucessful');
+            res.json(result);
+        }
+
+        
+    });
+        
+})
+
 //start server
 app.listen(port, () => {
     console.log('Server started on Port: ', port);
