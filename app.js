@@ -122,6 +122,19 @@ app.post('/login',(req, res, next) =>{
     });
 });
 
+app.get('/test',(req, res, next) =>{
+
+    db.query('Select * From user',function(error, result, fields){
+        db.on('error', function(err){
+            console.log('MySQL ERROR',err);
+            res.json('Login Error');
+        });
+
+        res.end(JSON.stringify(result[0]));
+        
+    });
+});
+
 //start server
 app.listen(port, () => {
     console.log('Server started on Port: ', port);
