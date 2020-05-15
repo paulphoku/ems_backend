@@ -156,7 +156,7 @@ app.get('/getBal/:user_id',(req, res, next) =>{
     });
 });
 
-//Get Balance
+//Get Transactions
 app.get('/getTrans/:user_id',(req, res, next) =>{
 
     let user_id = req.params.user_id;
@@ -170,7 +170,7 @@ app.get('/getTrans/:user_id',(req, res, next) =>{
         if(result<1){
             res.end(JSON.stringify('No Transactions yet'));
         }else{
-            res.send({data:result});
+            res.end(JSON.stringify(result));
         }
     });
 });
@@ -194,10 +194,7 @@ app.post('/transact/',(req,res,next)=>{
             console.log('Transaction sucessful');
             res.json(result);
         }
-
-        
-    });
-        
+    });   
 })
 
 //start server
