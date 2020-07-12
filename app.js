@@ -150,7 +150,7 @@ app.get('/getBal/:user_id',(req, res, next) =>{
             res.end(JSON.stringify(0));
         }else{
             db.query('SELECT SUM(t_amt) as bal FROM transactions',function(err, Res){
-                res.end(JSON.stringify(Res[0].bal));
+                res.end(JSON.stringify(Res));
             });
         }
     });
