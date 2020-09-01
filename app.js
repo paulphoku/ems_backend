@@ -103,7 +103,7 @@ app.post('/login',(req, res, next) =>{
     db.query('Select * From user Where usr_email=?', [email],function(error, result, fields){
         db.on('error', function(err){
             console.log('MySQL ERROR',err);
-            res.send('Login Error');
+            res.end('Login Error');
         });
 
         if (result[0] && result[0].usr_salt) {
