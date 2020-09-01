@@ -112,9 +112,9 @@ app.post('/login',(req, res, next) =>{
             //hash password from login
             var hashed_password = checkHashPassword(user_password, salt).passwordHash;
             if (encrypted_password == hashed_password) {
-                res.end(JSON.stringify(result[0]));
+                res.end(result[0]);
             }else{
-                res.end(JSON.stringify('Wrong password'));
+                res.end('Wrong password');
             }
         }else{
             res.json('user not exist!!!');
@@ -130,7 +130,7 @@ app.get('/test',(req, res, next) =>{
             res.json('Login Error');
         });
 
-        res.end(JSON.stringify(result[0]));
+        res.end(result[0]);
         
     });
 });
