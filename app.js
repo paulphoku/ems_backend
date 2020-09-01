@@ -156,7 +156,7 @@ app.get('/getBal/:user_id',(req, res, next) =>{
             res.end(JSON.stringify(0));
         }else{
             db.query('SELECT SUM(t_amt) as bal FROM transactions',function(err, Res){
-                res.end(JSON.stringify(Res));
+                res.send(Res);
             });
         }
     });
@@ -183,16 +183,16 @@ app.get('/getTrans/:user_id',(req, res, next) =>{
 
     let user_id = req.params.user_id;
 
-    db.query('SELECT * FROM transactions WHERE usr_id="'+user_id+'\"',function(error, result, fields){
+    db.query('SELECT * FROM transactions WHERE usr_id='+user_id,function(error, result, fields){
         db.on('error', function(err){
             console.log('MySQL ERROR',err);
             res.json('Login Error');
         });
 
         if(result<1){
-            res.end(JSON.stringify('No Transactions yet'));
+            res.send(JSON.stringify('No Transactions yet'));
         }else{
-            res.end(JSON.stringify(result));
+            res.send(JSON.stringify(result));
         }
     });
 });
