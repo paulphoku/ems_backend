@@ -123,11 +123,11 @@ app.post('/login',(req, res, next) =>{
 });
 
 //get user
-app.get('/getUser',(req, res, next) =>{
+app.get('/getUser/:user_id',(req, res, next) =>{
 
-    let user_id = req.query.user_id;
+    let user_id = req.params.user_id;
 
-    db.query('SELECT * FROM user WHERE usr_unique_id="'+user_id+'"',function(error, result, fields){
+    db.query('SELECT * FROM user WHERE usr_unique_id='+user_id,function(error, result, fields){
         db.on('error', function(err){
             console.log('MySQL ERROR',err);
             res.json('Login Error');
