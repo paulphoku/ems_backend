@@ -122,16 +122,22 @@ app.post('/login',(req, res, next) =>{
     });
 });
 
-app.get('/test',(req, res, next) =>{
+//get user
+app.get('/getUser/:user_id',(req, res, next) =>{
 
-    db.query('Select * From user',function(error, result, fields){
+    let user_id = req.params.user_id;
+
+    db.query('SELECT * FROM user WHERE usr_unique_id="'+user_id+'"',function(error, result, fields){
         db.on('error', function(err){
             console.log('MySQL ERROR',err);
             res.json('Login Error');
         });
 
-        res.end(result[0]);
-        
+        if(result<1){
+            res.send(JSON.stringify(0));
+        }else{
+            res.send(JSON.stringify(result));
+        }
     });
 });
 
@@ -155,6 +161,22 @@ app.get('/getBal/:user_id',(req, res, next) =>{
         }
     });
 });
+
+//test
+app.get('/test',(req, res, next) =>{
+
+    db.query('Select * From user',function(error, result, fields){
+        db.on('error', function(err){
+            console.log('MySQL ERROR',err);
+            res.json('Login Error');
+        });
+
+        res.send(result[0]);
+        
+    });
+});
+
+
 
 //Get Transactions
 app.get('/getTrans/:user_id',(req, res, next) =>{
