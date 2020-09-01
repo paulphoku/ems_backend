@@ -192,7 +192,7 @@ app.get('/getTrans/:user_id',(req, res, next) =>{
         if(result<1){
             res.send(JSON.stringify('No Transactions yet'));
         }else{
-            res.send(JSON.stringify(result));
+            res.send(result);
         }
     });
 });
