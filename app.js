@@ -103,21 +103,21 @@ app.post('/login',(req, res, next) =>{
     db.query('Select * From user Where usr_email=?', [email],function(error, result, fields){
         db.on('error', function(err){
             console.log('MySQL ERROR',err);
-            res.json('Login Error');
+            res.send('Login Error');
         });
 
-        if (result && result[0].usr_salt) {
+        if (result[0] && result[0].usr_salt) {
             var salt = result[0].usr_salt;//Getsalt from database
             var encrypted_password = result[0].usr_encrypted_password;
             //hash password from login
             var hashed_password = checkHashPassword(user_password, salt).passwordHash;
             if (encrypted_password == hashed_password) {
-                res.end(result[0]);
+                res.send(result[0]);
             }else{
-                res.end('Wrong password');
+                res.send('Wrong password');
             }
         }else{
-            res.json('user not exist!!!');
+            res.send('user not exist!!!');
         }
     });
 });
