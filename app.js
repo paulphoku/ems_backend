@@ -112,7 +112,7 @@ app.post('/login',(req, res, next) =>{
             //hash password from login
             var hashed_password = checkHashPassword(user_password, salt).passwordHash;
             if (encrypted_password == hashed_password) {
-                res.send(result[0]);
+                res.send(result[0].usr_unique_id);
             }else{
                 res.send('Wrong password');
             }
