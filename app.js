@@ -196,8 +196,9 @@ app.get('/getTrans/:user_id', (req, res, next) => {
 
             tmpStr = JSON.stringify(result);
 
-            newStr = tmpStr.substr(1, tmpStr.length - 2);
-            res.send(newStr);
+            //newStr = tmpStr.substr(1, tmpStr.length - 2);
+            //res.send(newStr);
+            res.send(tmpStr);
             res.end();
         }
     });
