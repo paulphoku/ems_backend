@@ -7,6 +7,8 @@ var crypto = require('crypto');
 var uuid = require('uuid');
 var express = require('express');
 var bodyParser = require('body-parser');
+const cors = require('cors');
+
 
 //Defining the PORT
 const port = process.env.PORT || 4000;
@@ -42,7 +44,7 @@ function checkHashPassword(userPassword, salt) {
 //END PASSWORD UTIL
 
 
-
+app.use(cors());
 const app = express();
 //middleware
 app.use(bodyParser.json()); //Accespt json params
