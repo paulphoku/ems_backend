@@ -44,11 +44,12 @@ function checkHashPassword(userPassword, salt) {
 //END PASSWORD UTIL
 
 
-app.use(cors());
+
 const app = express();
 //middleware
 app.use(bodyParser.json()); //Accespt json params
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cors());
 
 //test password encryption
 // app.get("/",(req,res,next)=>{
