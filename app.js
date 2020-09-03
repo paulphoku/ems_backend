@@ -116,7 +116,7 @@ app.post('/login', (req, res, next) => {
             //hash password from login
             var hashed_password = checkHashPassword(user_password, salt).passwordHash;
             if (encrypted_password == hashed_password) {
-                res.send(result[0].usr_unique_id);
+                res.send(result[0]);
             } else {
                 res.send('Wrong password');
             }
@@ -157,10 +157,14 @@ app.get('/getBal/:user_id', (req, res, next) => {
         });
 
         if (result < 1) {
-            res.end(JSON.stringify(0));
+            res.send(JSON.stringify('No Transactions yet'));
         } else {
             db.query('SELECT SUM(t_amt) as bal FROM transactions', function (err, Res) {
-                res.send(Res);
+                res.send({
+                    result:Res[0].bal,
+                    code:200
+                });
+                res.end();
             });
         }
     });
@@ -196,12 +200,14 @@ app.get('/getTrans/:user_id', (req, res, next) => {
         if (result < 1) {
             res.send(JSON.stringify('No Transactions yet'));
         } else {
-
-            tmpStr = JSON.stringify(result);
+            //tmpStr = JSON.stringify(result);
 
             //newStr = tmpStr.substr(1, tmpStr.length - 2);
             //res.send(newStr);
-            res.send(tmpStr);
+            res.send({
+                result:result,
+                code:200
+            });
             res.end();
         }
     });
