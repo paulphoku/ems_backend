@@ -91,8 +91,9 @@ app.post('/register/', (req, res, next) => {
                     res.json('Register sucessful');
                     console.log('Register sucessful');
                     res.json(result);
-                });
+            });
         }
+        res.end();
     });
 })
 
@@ -123,6 +124,7 @@ app.post('/login', (req, res, next) => {
         } else {
             res.send('user not exist!!!');
         }
+        res.end();
     });
 });
 
@@ -134,7 +136,10 @@ app.get('/getUser/:user_id', (req, res, next) => {
     db.query('SELECT * FROM user WHERE usr_unique_id=' + user_id, function (error, result, fields) {
         db.on('error', function (err) {
             console.log('MySQL ERROR', err);
-            res.json('Login Error');
+            res.send({
+                result:'Login Error',
+                code:204
+            });
         });
 
         if (result < 1) {
@@ -142,11 +147,13 @@ app.get('/getUser/:user_id', (req, res, next) => {
         } else {
             res.send(JSON.stringify(result));
         }
+        res.end();
     });
+    
 });
 
 //Get Balance
-app.get('/getBal/:user_id', (req, res, next) => {
+app.get('/balance/:user_id', (req, res, next) => {
 
     let user_id = req.params.user_id;
 
@@ -157,16 +164,19 @@ app.get('/getBal/:user_id', (req, res, next) => {
         });
 
         if (result < 1) {
-            res.send(JSON.stringify('No Transactions yet'));
+            res.send({
+                result:'No Transactions yet',
+                code:204
+            });
         } else {
             db.query('SELECT SUM(t_amt) as bal FROM transactions', function (err, Res) {
                 res.send({
                     result:Res[0].bal,
                     code:200
                 });
-                res.end();
             });
         }
+        res.end();
     });
 });
 
@@ -180,40 +190,41 @@ app.get('/test', (req, res, next) => {
         });
 
         res.send(result[0]);
-
+        res.end();
     });
 });
 
 
 
 //Get Transactions
-app.get('/getTrans/:user_id', (req, res, next) => {
+app.get('/transaction/:user_id', (req, res, next) => {
 
     let user_id = req.params.user_id;
-
-    db.query('SELECT * FROM transactions WHERE usr_id=' + user_id, function (error, result, fields) {
+   
+    query = "SELECT t.t_id, t.usr_id , DATE_FORMAT(t.t_date, '%d') as t_day, DATE_FORMAT(t.t_date, '%b') as t_month, t_desc, t_amt , tt.tt_desc, t_bal FROM transactions t, trans_type tt     WHERE t.t_type = tt.tt_id AND t.usr_id='"+user_id+"'";
+    db.query(query , function (error, result, fields) {
         db.on('error', function (err) {
             console.log('MySQL ERROR', err);
             res.json('Login Error');
+            
         });
 
         if (result < 1) {
-            res.send(JSON.stringify('No Transactions yet'));
+            res.send({
+                result:'No Transactions yet',
+                code:204
+            });
         } else {
-            //tmpStr = JSON.stringify(result);
-
-            //newStr = tmpStr.substr(1, tmpStr.length - 2);
-            //res.send(newStr);
             res.send({
                 result:result,
                 code:200
             });
-            res.end();
         }
+        res.end();
     });
 });
 
-app.post('/transact/', (req, res, next) => {
+app.post('/transaction/', (req, res, next) => {
     var post_data = req.body; //get post params
 
     usr_id = post_data.usr_id;
@@ -232,7 +243,9 @@ app.post('/transact/', (req, res, next) => {
                 console.log('Transaction sucessful');
                 res.json(result);
             }
-        });
+            res.end();
+    });
+
 })
 
 //start server
