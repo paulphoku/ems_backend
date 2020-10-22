@@ -11,7 +11,7 @@ const cors = require('cors');
 
 
 //Defining the PORT
-const port = process.env.PORT || 4000;
+const port = process.env.PORT || 8080;
 
 //Connect to Mysql
 const db = require('./config/connection');
@@ -79,21 +79,19 @@ app.post('/register/', (req, res, next) => {
         }
 
         if (results && results.length) {
-            res.json('User already exists!!!');
+            res.send({msg:'User already exists!!!'});
             console.log('User already exists!!!');
         } else {
             db.query('INSERT INTO `user`(`usr_unique_id`, `usr_salt`, `usr_created_at`, `usr_updated_at`, `usr_fname`, `usr_lname`, `usr_email`, `usr_encrypted_password`) VALUES (?,?,NOW(),NOW(),?,?,?,?)',
-                [uid, salt, fname, lname, email, password], function (err, result, fields) {
+                [uid, salt, fname, lname, email, password], function (err, rows, fields) {
                     if (err) {
                         console.log('MySQL ERROR', err);
-                        res.json('Register error: ', err);
+                        res.send({ msg: "Could not register user", status: 1 });
+                    }else{
+                        res.send({ msg: "Done", status: 0, rows: rows.length, data: rows });
                     }
-                    res.json('Register sucessful');
-                    console.log('Register sucessful');
-                    res.json(result);
-            });
+                });
         }
-        res.end();
     });
 })
 
@@ -105,26 +103,21 @@ app.post('/login', (req, res, next) => {
     var user_password = post_data.password;
     var email = post_data.email;
 
-    db.query('Select * From user Where usr_email=?', [email], function (error, result, fields) {
-        db.on('error', function (err) {
-            console.log('MySQL ERROR', err);
-            res.end('Login Error');
-        });
+    db.query('Select * From user Where usr_email=?', [email], function (error, rows, fields) {
 
-        if (result[0] && result[0].usr_salt) {
-            var salt = result[0].usr_salt;//Getsalt from database
-            var encrypted_password = result[0].usr_encrypted_password;
+        if (rows[0] && rows[0].usr_salt) {
+            var salt = rows[0].usr_salt;//Getsalt from database
+            var encrypted_password = rows[0].usr_encrypted_password;
             //hash password from login
             var hashed_password = checkHashPassword(user_password, salt).passwordHash;
             if (encrypted_password == hashed_password) {
-                res.send(result[0]);
+                res.send({ msg: "Done", status: 0, rows: rows.length, data: rows });
             } else {
-                res.send('Wrong password');
+                res.send({ msg: "Wrong password", status: 1 });
             }
         } else {
-            res.send('user not exist!!!');
+            res.send({ msg: "user not exist!!!", status: 2 });
         }
-        res.end();
     });
 });
 
@@ -133,23 +126,13 @@ app.get('/getUser/:user_id', (req, res, next) => {
 
     let user_id = req.params.user_id;
 
-    db.query('SELECT * FROM user WHERE usr_unique_id=' + user_id, function (error, result, fields) {
-        db.on('error', function (err) {
-            console.log('MySQL ERROR', err);
-            res.send({
-                result:'Login Error',
-                code:204
-            });
-        });
-
-        if (result < 1) {
-            res.send(JSON.stringify(0));
+    db.query('SELECT * FROM user WHERE usr_unique_id=?',[user_id], function (error, result, fields) {
+        if (result) {
+            res.send({status: 0, msg : 'done', data: result});
         } else {
-            res.send(JSON.stringify(result));
+            res.send({msg:'Something went wrong', status:1});
         }
-        res.end();
     });
-    
 });
 
 //Get Balance
@@ -158,39 +141,28 @@ app.get('/balance/:user_id', (req, res, next) => {
     let user_id = req.params.user_id;
 
     db.query('SELECT * FROM transactions WHERE user_id=' + user_id, function (error, result, fields) {
-        db.on('error', function (err) {
-            console.log('MySQL ERROR', err);
-            res.json('Login Error');
-        });
 
         if (result < 1) {
             res.send({
-                result:'No Transactions yet',
-                code:204
+                result: 'No Transactions yet',
+                code: 204
             });
         } else {
             db.query('SELECT SUM(t_amt) as bal FROM transactions', function (err, Res) {
                 res.send({
-                    result:Res[0].bal,
-                    code:200
+                    result: Res[0].bal,
+                    code: 200
                 });
             });
         }
-        res.end();
     });
+
 });
 
 //test
 app.get('/test', (req, res, next) => {
-
     db.query('Select * From user', function (error, result, fields) {
-        db.on('error', function (err) {
-            console.log('MySQL ERROR', err);
-            res.json('Login Error');
-        });
-
-        res.send(result[0]);
-        res.end();
+        res.send({ msg: 'Done', status: 0, data: result });
     });
 });
 
@@ -200,27 +172,21 @@ app.get('/test', (req, res, next) => {
 app.get('/transaction/:user_id', (req, res, next) => {
 
     let user_id = req.params.user_id;
-   
-    query = "SELECT t.t_id, t.usr_id , DATE_FORMAT(t.t_date, '%d') as t_day, DATE_FORMAT(t.t_date, '%b') as t_month, t_desc, t_amt , tt.tt_desc, t_bal FROM transactions t, trans_type tt     WHERE t.t_type = tt.tt_id AND t.usr_id='"+user_id+"'";
-    db.query(query , function (error, result, fields) {
-        db.on('error', function (err) {
-            console.log('MySQL ERROR', err);
-            res.json('Login Error');
-            
-        });
+
+    query = "SELECT t.t_id, t.usr_id , DATE_FORMAT(t.t_date, '%d') as t_day, DATE_FORMAT(t.t_date, '%b') as t_month, t_desc, t_amt , tt.tt_desc, t_bal FROM transactions t, trans_type tt     WHERE t.t_type = tt.tt_id AND t.usr_id='" + user_id + "'";
+    db.query(query, function (error, result, fields) {
 
         if (result < 1) {
             res.send({
-                result:'No Transactions yet',
-                code:204
+                result: 'No Transactions yet',
+                code: 204
             });
         } else {
             res.send({
-                result:result,
-                code:200
+                result: result,
+                code: 200
             });
         }
-        res.end();
     });
 });
 
@@ -239,12 +205,9 @@ app.post('/transaction/', (req, res, next) => {
                 console.log('MySQL ERROR', err);
                 res.status(200);
             } else {
-                res.json('Transaction sucessful');
-                console.log('Transaction sucessful');
-                res.json(result);
+                res.send({ msg: 'Transaction sucessful', data: result, status: 0 })
             }
-            res.end();
-    });
+        });
 
 })
 
