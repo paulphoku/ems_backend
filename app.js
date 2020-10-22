@@ -166,6 +166,25 @@ app.get('/test', (req, res, next) => {
     });
 });
 
+//Register
+app.post('/update_user/', (req, res, next) => {
+    var post_data = req.body; //get post params
+
+
+    var uuid = post_data.uuid;
+    var fname = post_data.fname;
+    var lname = post_data.lname;
+    var email = post_data.email;
+    var date = '';
+
+    db.query('UPDATE `user` SET `usr_updated_at`=NOW(),`usr_fname`=?,`usr_lname`=? WHERE `usr_unique_id`=?', [fname,lname, uuid ], function (err, results, fields) {
+        if (err) {
+            console.log('MySQL ERROR', err);
+        }
+        res.send({msg:'done', status:0}); 
+    });
+})
+
 
 
 //Get Transactions
