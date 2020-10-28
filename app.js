@@ -110,7 +110,7 @@ app.post('/register/', (req, res, next) => {
             res.send({ msg: 'User already exists!!!' });
             console.log('User already exists!!!');
         } else {
-            db.query('INSERT INTO `user`(`usr_unique_id`, `usr_salt`, `usr_created_at`, `usr_updated_at`, `usr_fname`, `usr_lname`, `usr_email`, `usr_encrypted_password`) VALUES (?,?,NOW(),NOW(),?,?,?,?)',
+            db.query('INSERT INTO `user`(`usr_unique_id`, `usr_salt`, `usr_created_at`, `usr_updated_at`, `usr_fname`, `usr_lname`, `usr_email`, `usr_encrypted_password`, usr_role) VALUES (?,?,NOW(),NOW(),?,?,?,?, "normal")',
                 [uid, salt, fname, lname, email, password], function (err, rows, fields) {
                     if (err) {
                         console.log('MySQL ERROR', err);
