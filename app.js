@@ -262,11 +262,12 @@ app.post('/send_updates/', (req, res, next) => {
     var img = '';
 
 
-    if (sendNotification(message)) {
+    if (true) {
         db.query('INSERT INTO `notifications` (created_at, title, msg, img, link, priority) VALUES (NOW(), ?, ?, ?, ?, ?)', [ title, message, img, link, priority], function (err, results, fields) {
             if (err) {
                 console.log('MySQL ERROR', err);
             }
+            sendNotification(message)
             res.send({ msg: 'done', status: 0 });
         });
     }
