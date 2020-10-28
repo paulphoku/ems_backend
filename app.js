@@ -8,6 +8,10 @@ var uuid = require('uuid');
 var express = require('express');
 var bodyParser = require('body-parser');
 const cors = require('cors');
+const OneSignal = require('onesignal-node');
+
+const client = new OneSignal.Client('e9bca909-a3dc-446f-a0bd-e02184daa9cb', 'YjBmZjllZTAtNDQ2Ni00MTNlLTk1NzktNjU0MGJmMDA1OGEy');
+
 
 
 //Defining the PORT
@@ -43,6 +47,30 @@ function checkHashPassword(userPassword, salt) {
 }
 //END PASSWORD UTIL
 
+function sendNotification(message) {
+    const notification = {
+        contents: {
+            'tr': 'Yeni bildirim',
+            'en': message,
+        },
+        included_segments: ['Subscribed Users'],
+    };
+
+    // or you can use promise style:
+    client.createNotification(notification)
+        .then(response => {
+            console.log(response.body);
+            if (response.body.id.length > 1) {
+                return true;
+            } else {
+                return false
+            }
+        })
+        .catch(e => {
+            console.log(e)
+            return false
+        });
+}
 
 
 const app = express();
@@ -79,7 +107,7 @@ app.post('/register/', (req, res, next) => {
         }
 
         if (results && results.length) {
-            res.send({msg:'User already exists!!!'});
+            res.send({ msg: 'User already exists!!!' });
             console.log('User already exists!!!');
         } else {
             db.query('INSERT INTO `user`(`usr_unique_id`, `usr_salt`, `usr_created_at`, `usr_updated_at`, `usr_fname`, `usr_lname`, `usr_email`, `usr_encrypted_password`) VALUES (?,?,NOW(),NOW(),?,?,?,?)',
@@ -87,7 +115,7 @@ app.post('/register/', (req, res, next) => {
                     if (err) {
                         console.log('MySQL ERROR', err);
                         res.send({ msg: "Could not register user", status: 1 });
-                    }else{
+                    } else {
                         res.send({ msg: "Done", status: 0, rows: rows.length, data: rows });
                     }
                 });
@@ -126,11 +154,11 @@ app.get('/getUser/:user_id', (req, res, next) => {
 
     let user_id = req.params.user_id;
 
-    db.query('SELECT * FROM user WHERE usr_unique_id=?',[user_id], function (error, result, fields) {
+    db.query('SELECT * FROM user WHERE usr_unique_id=?', [user_id], function (error, result, fields) {
         if (result) {
-            res.send({status: 0, msg : 'done', data: result});
+            res.send({ status: 0, msg: 'done', data: result });
         } else {
-            res.send({msg:'Something went wrong', status:1});
+            res.send({ msg: 'Something went wrong', status: 1 });
         }
     });
 });
@@ -166,7 +194,7 @@ app.get('/test', (req, res, next) => {
     });
 });
 
-//Register
+//RUpdate User
 app.post('/update_user/', (req, res, next) => {
     var post_data = req.body; //get post params
 
@@ -177,15 +205,72 @@ app.post('/update_user/', (req, res, next) => {
     var email = post_data.email;
     var date = '';
 
-    db.query('UPDATE `user` SET `usr_updated_at`=NOW(),`usr_fname`=?,`usr_lname`=? WHERE `usr_unique_id`=?', [fname,lname, uuid ], function (err, results, fields) {
+    db.query('UPDATE `user` SET `usr_updated_at`=NOW(),`usr_fname`=?,`usr_lname`=? WHERE `usr_unique_id`=?', [fname, lname, uuid], function (err, results, fields) {
         if (err) {
             console.log('MySQL ERROR', err);
         }
-        res.send({msg:'done', status:0}); 
+        res.send({ msg: 'done', status: 0 });
     });
 })
 
+//Create report
+app.post('/add_report/', (req, res, next) => {
+    var post_data = req.body; //get post params
 
+    var train = post_data.train;
+    var type = post_data.type;
+    var title = post_data.title;
+    var message = post_data.message;
+
+    db.query('INSERT INTO `report` (train, type, title, message, created_at) VALUES ( ?, ?, ?, ?, NOW())', [train, type, title, message], function (err, results, fields) {
+        if (err) {
+            console.log('MySQL ERROR', err);
+        }
+        res.send({ msg: 'done', status: 0 });
+    });
+})
+
+//get all updates
+app.post('/get_all_updates/', (req, res, next) => {
+    db.query('SELECT * FROM `notifications`', function (err, results, fields) {
+        if (err) {
+            console.log('MySQL ERROR', err);
+        }
+        res.send({ msg: 'done', status: 0 , data: results});
+    });
+})
+
+//get all reports
+app.post('/get_all_reports', (req, res, next) => {
+    db.query('SELECT * FROM report', function (err, results, fields) {
+        if (err) {
+            console.log('MySQL ERROR', err);
+        }
+        res.send({ msg: 'done', status: 0 , data: results});
+    });
+})
+
+//Create updates
+app.post('/send_updates/', (req, res, next) => {
+    var post_data = req.body; //get post params
+
+    var title = post_data.title;
+    var message = post_data.message;
+    var link = post_data.link;
+    var priority = post_data.priority;
+
+    var img = '';
+
+
+    if (sendNotification(message)) {
+        db.query('INSERT INTO `notifications` (created_at, title, msg, img, link, priority) VALUES (NOW(), ?, ?, ?, ?, ?)', [ title, message, img, link, priority], function (err, results, fields) {
+            if (err) {
+                console.log('MySQL ERROR', err);
+            }
+            res.send({ msg: 'done', status: 0 });
+        });
+    }
+})
 
 //Get Transactions
 app.get('/transaction/:user_id', (req, res, next) => {
