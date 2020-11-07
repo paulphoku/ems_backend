@@ -162,13 +162,13 @@ app.get('/balance/:user_id', (req, res, next) => {
 
     db.query('SELECT * FROM transactions WHERE user_id=' + user_id, function (error, result, fields) {
 
-        if (result < 1) {
+        if (!result) {
             res.send({
-                result: 'No Transactions yet',
-                code: 204
+                result: 0,
+                code: 200
             });
         } else {
-            db.query('SELECT SUM(t_amt) as bal FROM transactions', function (err, Res) {
+            db.query('SELECT SUM(t_amt) as bal FROM transactions where user_id ='+user_id, function (err, Res) {
                 res.send({
                     result: Res[0].bal,
                     code: 200
