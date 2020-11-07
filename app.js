@@ -79,14 +79,6 @@ app.use(bodyParser.json()); //Accespt json params
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors());
 
-//test password encryption
-// app.get("/",(req,res,next)=>{
-//     console.log('Password : 123456');
-//     var encrypt = saltHashPassword("123456");
-//     console.log('Encrypt: ' +encrypt.passwordHash);
-//     console.log('Salt: ' +encrypt.salt);
-// });
-
 //Register
 app.post('/register/', (req, res, next) => {
     var post_data = req.body; //get post params
@@ -232,7 +224,8 @@ app.post('/add_report/', (req, res, next) => {
 
 //get all updates
 app.post('/get_all_updates/', (req, res, next) => {
-    db.query('SELECT * FROM `notifications`', function (err, results, fields) {
+    var searchText = req.body.searchText;
+    db.query("SELECT * FROM `notifications` WHERE title LIKE '%"+searchText+"%' OR msg LIKE '%"+searchText+"%' OR  created_at LIKE '%"+searchText+"%' ORDER BY created_at DESC", function (err, results, fields) {
         if (err) {
             console.log('MySQL ERROR', err);
         }
@@ -242,7 +235,8 @@ app.post('/get_all_updates/', (req, res, next) => {
 
 //get all reports
 app.post('/get_all_reports', (req, res, next) => {
-    db.query('SELECT * FROM report', function (err, results, fields) {
+    var searchText = req.body.searchText;
+    db.query("SELECT * FROM `report` WHERE title LIKE '%"+searchText+"%' OR message LIKE '%"+searchText+"%' OR train LIKE '%"+searchText+"%' OR created_at LIKE '%"+searchText+"%' ORDER BY created_at DESC", function (err, results, fields) {
         if (err) {
             console.log('MySQL ERROR', err);
         }
