@@ -9,10 +9,54 @@ var express = require('express');
 var bodyParser = require('body-parser');
 const cors = require('cors');
 const OneSignal = require('onesignal-node');
+"use strict";
+const nodemailer = require("nodemailer");
+const Twilio = require("twilio");
+
 
 const client = new OneSignal.Client('e9bca909-a3dc-446f-a0bd-e02184daa9cb', 'YjBmZjllZTAtNDQ2Ni00MTNlLTk1NzktNjU0MGJmMDA1OGEy');
 
+// create reusable transporter object using the default SMTP transport
+const transporter = nodemailer.createTransport({
+    host: "smtp-mail.outlook.com",
+    port: 587,
+    auth: {
+        user: 'erms2020@outlook.com',
+        pass: 'admin@erms'
+    },
+    tls: true,
+});
 
+function sendSMS(tel, message) {
+    // getting ready
+    const twilioNumber = '+12029183159';
+    const accountSid = 'ACb43150568429fac3440ea1cc0c177e9a';
+    const authToken = 'f84be7757da7a7889c29753433469ae2';
+    const client = Twilio(accountSid, authToken);
+
+    // start sending message
+    const phoneNumbers = [tel];
+
+    phoneNumbers.map(phoneNumber => {
+
+        if (!validE164(phoneNumber)) {
+            throw new Error('number must be E164 format!');
+        }
+
+        const textContent = {
+            body: message,
+            to: phoneNumber,
+            from: twilioNumber
+        }
+        client.messages.create(textContent)
+            .then((message) => console.log(message.to))
+    })
+}
+
+// Validate E164 format
+function validE164(num) {
+    return /^\+?[1-9]\d{1,14}$/.test(num)
+}
 
 //Defining the PORT
 const port = process.env.PORT || 8080;
@@ -70,6 +114,34 @@ function sendNotification(message) {
             console.log(e)
             return false
         });
+}
+
+async function resetPass(email, password, res) {
+    try {
+        // send mail with defined transport object
+        let info = await transporter.sendMail({
+            from: '"ERMS" <erms2020@outlook.com>', // sender address
+            to: email, // list of receivers
+            subject: "Forgot Password ✔", // Subject line
+            text: "", // plain text body
+            html: "<b>Your password has been reseted here is your new password:</b>"
+                + "<br><h1>" + password + "</h1>"
+                + "<br><br> <p>login to the application using the new passsword and head to profile to add your own unique password!</p>"
+                + "<br><p>kind Regards</><br><p>Air Food ✈️", // html body
+        });
+
+        console.log(password);
+
+        console.log("Message sent: %s", info.messageId);
+        if (info.messageId) {
+            res.send({ msg: "Done", status: 0 });
+        } else {
+
+        }
+    } catch (err) {
+        console.log(err);
+        res.send({ msg: 'Something went wrong', status: 2 });
+    }
 }
 
 
@@ -168,7 +240,7 @@ app.get('/balance/:user_id', (req, res, next) => {
                 code: 200
             });
         } else {
-            db.query('SELECT SUM(t_amt) as bal FROM transactions where user_id ='+user_id, function (err, Res) {
+            db.query('SELECT SUM(t_amt) as bal FROM transactions where user_id =' + user_id, function (err, Res) {
                 res.send({
                     result: Res[0].bal,
                     code: 200
@@ -186,7 +258,7 @@ app.get('/test', (req, res, next) => {
     });
 });
 
-//RUpdate User
+//Update User
 app.post('/update_user/', (req, res, next) => {
     var post_data = req.body; //get post params
 
@@ -195,13 +267,18 @@ app.post('/update_user/', (req, res, next) => {
     var fname = post_data.fname;
     var lname = post_data.lname;
     var email = post_data.email;
+    var cell = post_data.cell;
     var date = '';
 
-    db.query('UPDATE `user` SET `usr_updated_at`=NOW(),`usr_fname`=?,`usr_lname`=? WHERE `usr_unique_id`=?', [fname, lname, uuid], function (err, results, fields) {
+
+    db.query("UPDATE `user` SET `usr_updated_at`=NOW(),`usr_fname`=?,`usr_lname`=? , `usr_cell`=? WHERE `usr_unique_id`=?", [fname, lname, cell, uuid], function (err, results, fields) {
         if (err) {
             console.log('MySQL ERROR', err);
+        } else {
+            console.log(results);
+
+            res.send({ msg: 'done', status: 0 });
         }
-        res.send({ msg: 'done', status: 0 });
     });
 })
 
@@ -225,22 +302,22 @@ app.post('/add_report/', (req, res, next) => {
 //get all updates
 app.post('/get_all_updates/', (req, res, next) => {
     var searchText = req.body.searchText;
-    db.query("SELECT * FROM `notifications` WHERE title LIKE '%"+searchText+"%' OR msg LIKE '%"+searchText+"%' OR  created_at LIKE '%"+searchText+"%' ORDER BY created_at DESC", function (err, results, fields) {
+    db.query("SELECT * FROM `notifications` WHERE title LIKE '%" + searchText + "%' OR msg LIKE '%" + searchText + "%' OR  created_at LIKE '%" + searchText + "%' ORDER BY created_at DESC", function (err, results, fields) {
         if (err) {
             console.log('MySQL ERROR', err);
         }
-        res.send({ msg: 'done', status: 0 , data: results});
+        res.send({ msg: 'done', status: 0, data: results });
     });
 })
 
 //get all reports
 app.post('/get_all_reports', (req, res, next) => {
     var searchText = req.body.searchText;
-    db.query("SELECT * FROM `report` WHERE title LIKE '%"+searchText+"%' OR message LIKE '%"+searchText+"%' OR train LIKE '%"+searchText+"%' OR created_at LIKE '%"+searchText+"%' ORDER BY created_at DESC", function (err, results, fields) {
+    db.query("SELECT * FROM `report` WHERE title LIKE '%" + searchText + "%' OR message LIKE '%" + searchText + "%' OR train LIKE '%" + searchText + "%' OR created_at LIKE '%" + searchText + "%' ORDER BY created_at DESC", function (err, results, fields) {
         if (err) {
             console.log('MySQL ERROR', err);
         }
-        res.send({ msg: 'done', status: 0 , data: results});
+        res.send({ msg: 'done', status: 0, data: results });
     });
 })
 
@@ -257,13 +334,25 @@ app.post('/send_updates/', (req, res, next) => {
 
 
     if (true) {
-        db.query('INSERT INTO `notifications` (created_at, title, msg, img, link, priority) VALUES (NOW(), ?, ?, ?, ?, ?)', [ title, message, img, link, priority], function (err, results, fields) {
+        db.query('INSERT INTO `notifications` (created_at, title, msg, img, link, priority) VALUES (NOW(), ?, ?, ?, ?, ?)', [title, message, img, link, priority], function (err, results, fields) {
             if (err) {
                 console.log('MySQL ERROR', err);
             }
-            sendNotification(message)
+            sendNotification(message);
+            db.query('SELECT usr_cell FROM `user`', [], function (err, rows, fields) {
+                if (err) {
+                    console.log('MySQL ERROR', err);
+                }
+                for (let index = 0; index < rows.length; index++) {
+                    if (rows[index].usr_cell != '') {
+                        sendSMS('+27'+(rows[index].usr_cell).substr(1,9), message);
+                    }
+                }
+            });
+
             res.send({ msg: 'done', status: 0 });
         });
+
     }
 })
 
@@ -310,8 +399,120 @@ app.post('/transaction/', (req, res, next) => {
 
 })
 
+//reset password
+app.get('/resetPassword/:email', (req, res, next) => {
+    var email = req.params.email;
+    var plaint_password = uuid.v4().substr(0, 8);
+    plaint_password = plaint_password.toUpperCase();
+    var hash_data = saltHashPassword(plaint_password);
+    var password = hash_data.passwordHash;
+    var salt = hash_data.salt; //get salt
+
+    db.query("UPDATE `user` SET `usr_salt`=?,`usr_encrypted_password`=? WHERE usr_email = ?",
+        [salt, password, email], function (err, rows, fields) {
+            if (err) {
+                console.log('MySQL ERROR', err);
+                res.send({ msg: "Could not change password", status: 1 });
+            } else if (rows.changedRows > 0) {
+                resetPass(email, plaint_password, res);
+            } else {
+                res.send({ msg: "Invalid email recieved or email not registered", status: 1, data: rows });
+            }
+        }
+    );
+})
+
+//update password
+app.post('/update_password', (req, res, next) => {
+    var uuid = req.body.uuid;
+    var plaint_password = req.body.password;
+    var hash_data = saltHashPassword(plaint_password);
+    var password = hash_data.passwordHash;
+    var salt = hash_data.salt; //get salt
+
+    try {
+        db.query("UPDATE `user` SET `usr_salt`=?,`usr_encrypted_password`=? WHERE usr_unique_id = ?",
+            [salt, password, uuid], function (err, rows, fields) {
+                if (err) {
+                    //console.log('MySQL ERROR', err);
+                    res.send({ msg: "Could not change password", status: 1 });
+                } else if (rows.changedRows > 0) {
+                    res.send({ msg: "Done", status: 0, rows: rows.length, data: rows });
+                } else {
+                    res.send({ msg: "Could not change password", status: 1, data: rows });
+                }
+            }
+        );
+    } catch (err) {
+        res.send({ msg: 'Something went wrong', status: 2 });
+    }
+})
+
+//delete user
+app.post('/delete_user', (req, res, next) => {
+    var uid = req.body.uuid;
+    try {
+        db.query("DELETE FROM `user` WHERE `user`.`usr_unique_id` = ?", [uid], function (err, rows, fields) {
+            if (err) {
+                console.log('MySQL ERROR', err);
+            }
+
+            if (rows.affectedRows) {
+                res.send({ msg: "Done", status: 0 });
+            } else {
+                res.send({ msg: "Could not delete user", status: 1, });
+            }
+        }
+        );
+    } catch (err) {
+        res.send({ msg: 'Something went wrong', status: 2 });
+    }
+})
+
+//get all users
+app.post('/get_all_users', (req, res, next) => {
+    var searchText = req.body.searchText;
+    try {
+        db.query("SELECT * FROM user WHERE usr_email LIKE '%" + searchText + "%' OR usr_created_at LIKE '%" + searchText + "%' OR usr_role LIKE '%" + searchText + "%' ORDER BY usr_created_at DESC", [], function (err, rows, fields) {
+            if (err) {
+                console.log('MySQL ERROR', err);
+            }
+
+            if (rows) {
+                res.send({ msg: "Done", data: rows, status: 0 });
+            } else {
+                res.send({ msg: "Could not get all users", status: 1, });
+            }
+        }
+        );
+    } catch (err) {
+        res.send({ msg: 'Something went wrong', status: 2 });
+        console.log(err)
+    }
+})
+
+//register as
+app.post('/register_admin', (req, res, next) => {
+    var uuid = req.body.uuid;
+    var ur = req.body.ur;
+    try {
+        db.query("UPDATE `user` SET `usr_role`='" + ur + "' WHERE uuid = ?",
+            [uuid], function (err, rows, fields) {
+                if (rows) {
+                    res.send({ status: 0, msg: 'done', data: rows });
+                } else {
+                    console.log(err);
+                    res.send({ msg: "Something went wrong", status: 1 });
+                }
+            }
+        );
+    } catch (err) {
+        res.send({ msg: 'Something went wrong', status: 2 });
+    }
+})
+
+
 //start server
 app.listen(port, () => {
     console.log('Server started on Port: ', port);
 });
-
