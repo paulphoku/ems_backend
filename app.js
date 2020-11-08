@@ -164,6 +164,7 @@ app.post('/register/', (req, res, next) => {
     var fname = post_data.fname;
     var lname = post_data.lname;
     var email = post_data.email;
+    var cell = post_data.cell;
 
     db.query('SELECT * FROM user WHERE usr_email=?', [email], function (err, results, fields) {
         if (err) {
@@ -174,8 +175,8 @@ app.post('/register/', (req, res, next) => {
             res.send({ msg: 'User already exists!!!' });
             console.log('User already exists!!!');
         } else {
-            db.query('INSERT INTO `user`(`usr_unique_id`, `usr_salt`, `usr_created_at`, `usr_updated_at`, `usr_fname`, `usr_lname`, `usr_email`, `usr_encrypted_password`, usr_role) VALUES (?,?,NOW(),NOW(),?,?,?,?, "normal")',
-                [uid, salt, fname, lname, email, password], function (err, rows, fields) {
+            db.query('INSERT INTO `user`(`usr_unique_id`, `usr_salt`, `usr_created_at`, `usr_updated_at`, `usr_fname`, `usr_lname`, `usr_email`, `usr_encrypted_password`, usr_role, usr_cell) VALUES (?,?,NOW(),NOW(),?,?,?,?, "normal", ?)',
+                [uid, salt, fname, lname, email, password, cell], function (err, rows, fields) {
                     if (err) {
                         console.log('MySQL ERROR', err);
                         res.send({ msg: "Could not register user", status: 1 });
@@ -231,16 +232,16 @@ app.get('/getUser/:user_id', (req, res, next) => {
 app.get('/balance/:user_id', (req, res, next) => {
 
     let user_id = req.params.user_id;
+    db.query("SELECT * FROM transactions WHERE usr_id='" + user_id + "'", function (error, result, fields) {
 
-    db.query('SELECT * FROM transactions WHERE user_id=' + user_id, function (error, result, fields) {
-
-        if (!result) {
+        if (error) {
             res.send({
                 result: 0,
                 code: 200
             });
+            console.log(error)
         } else {
-            db.query('SELECT SUM(t_amt) as bal FROM transactions where user_id =' + user_id, function (err, Res) {
+            db.query("SELECT SUM(t_amt) as bal FROM transactions where usr_id ='" + user_id + "'", function (err, Res) {
                 res.send({
                     result: Res[0].bal,
                     code: 200
@@ -345,11 +346,10 @@ app.post('/send_updates/', (req, res, next) => {
                 }
                 for (let index = 0; index < rows.length; index++) {
                     if (rows[index].usr_cell != '') {
-                        sendSMS('+27'+(rows[index].usr_cell).substr(1,9), message);
+                        sendSMS('+27' + (rows[index].usr_cell).substr(1, 9), message);
                     }
                 }
             });
-
             res.send({ msg: 'done', status: 0 });
         });
 
@@ -511,6 +511,48 @@ app.post('/register_admin', (req, res, next) => {
     }
 })
 
+//add balance
+app.post('/add_balance', (req, res, next) => {
+
+    let user_id = req.body.uuid;
+    let amt = req.body.amt;
+
+    db.query("SELECT SUM(t_amt) as bal FROM transactions where usr_id ='" + user_id + "'", function (error, result, fields) {
+        if (error) {
+            console.log(error);
+            res.send({
+                result: 0,
+                status: 1
+            });
+        } else {
+            let bal = result[0].bal;
+            if (bal == null) {
+                bal = amt;
+            } else {
+                bal += amt;
+            }
+            db.query("INSERT INTO `transactions` (`t_id`, `usr_id`, `t_type`, `t_desc`, `t_date`, `t_amt`, `t_bal`) VALUES (NULL, ?, 2, 'Money Added From Credit Card', NOW(), ?, ?)",
+                [user_id, amt, bal], function (err, row) {
+                    if (err) {
+                        console.log(err);
+                        res.send({
+                            row: 0,
+                            status: 1,
+                        });
+                    } else {
+                        console.log(row);
+                        res.send({
+                            data: row,
+                            status: 0,
+                            msg: 'done'
+                        });
+                    }
+                });
+
+        }
+    });
+
+});
 
 //start server
 app.listen(port, () => {
