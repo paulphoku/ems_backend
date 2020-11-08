@@ -127,7 +127,7 @@ async function resetPass(email, password, res) {
             html: "<b>Your password has been reseted here is your new password:</b>"
                 + "<br><h1>" + password + "</h1>"
                 + "<br><br> <p>login to the application using the new passsword and head to profile to add your own unique password!</p>"
-                + "<br><p>kind Regards</><br><p>Air Food ✈️", // html body
+                + "<br><p>kind Regards</><br><p>ERMS", // html body
         });
 
         console.log(password);
